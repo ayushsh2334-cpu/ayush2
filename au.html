@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AU World Clock</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  background: #080d18;
+  color: #f1f5f9;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+header h1 {
+  color: #00ffd0;
+  text-shadow: 0 0 15px #00ffd066;
+}
+
+header p {
+  color: #9caac0;
+}
+
+.card {
+  background: #111b2b;
+  border: 1px solid #263750;
+  border-radius: 18px;
+  padding: 20px;
+  margin: 15px auto;
+  max-width: 600px;
+  box-shadow: 0 8px 25px #0004;
+}
+
+h2 {
+  font-size: 18px;
+  color: #00ffd0;
+  margin-top: 0;
+}
+
+.main-time {
+  font-size: clamp(38px, 10vw, 58px);
+  text-align: center;
+  color: #00ffd0;
+  text-shadow: 0 0 18px #00ffd055;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.date {
+  text-align: center;
+  color: #aab8cc;
+  margin-top: 12px;
+}
+
+.world-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid #263750;
+  padding: 13px 0;
+}
+
+.world-row:last-child {
+  border-bottom: none;
+}
+
+.city {
+  font-weight: bold;
+}
+
+.zone {
+  color: #91a4bd;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.world-time {
+  color: #00ffd0;
+  font-size: 19px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+button {
+  background: #00d9b2;
+  color: #06131a;
+  border: none;
+  border-radius: 9px;
+  padding: 11px 16px;
+  margin: 5px 3px 0 0;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #263750;
+  color: white;
+}
+
+button:active {
+  transform: scale(.97);
+}
+
+.controls {
+  text-align: center;
+}
+
+.tool-time {
+  font-size: 38px;
+  text-align: center;
+  font-weight: bold;
+  margin: 20px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+input {
+  background: #080d18;
+  color: white;
+  border: 1px solid #38506d;
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+footer {
+  text-align: center;
+  color: #72839c;
+  font-size: 12px;
+  padding: 25px 0;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>⚡ AU WORLD CLOCK</h1>
+  <p>Your time. Your world. One dashboard.</p>
+</header>
+
+<section class="card">
+  <h2>🕒 Local Digital Clock</h2>
+  <div class="main-time" id="localTime">00:00:00</div>
+  <div class="date" id="localDate">Loading date...</div>
+</section>
+
+<section class="card">
+  <h2>🌍 World Clock</h2>
+  <div id="worldClocks"></div>
+</section>
+
+<section class="card">
+  <h2>⏱️ Stopwatch</h2>
+  <div class="tool-time" id="stopwatch">00:00:00.00</div>
+  <div class="controls">
+    <button id="startWatch">Start</button>
+    <button class="secondary" id="resetWatch">Reset</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>⏳ Countdown Timer</h2>
+  <input id="minutes" type="number" min="0"
+         max="999" placeholder="Minutes" value="1">
+  <input id="seconds" type="number" min="0"
+         max="59" placeholder="Seconds" value="0">
+  <div class="tool-time" id="timerDisplay">01:00</div>
+  <div class="controls">
+    <button id="startTimer">Start Timer</button>
+    <button class="secondary" id="pauseTimer">Pause</button>
+    <button class="secondary" id="resetTimer">Reset</button>
+  </div>
+</section>
+
+<footer>
+  Made with ❤️ by AU Classes
+</footer>
+
+<script>
+const cities = [
+  { name: "India", flag: "🇮🇳",
+    zone: "Asia/Kolkata" },
+  { name: "London", flag: "🇬🇧",
+    zone: "Europe/London" },
+  { name: "New York", flag: "🇺🇸",
+    zone: "America/New_York" },
+  { name: "Tokyo", flag: "🇯🇵",
+    zone: "Asia/Tokyo" },
+  { name: "Dubai", flag: "🇦🇪",
+    zone: "Asia/Dubai" },
+  { name: "Sydney", flag: "🇦🇺",
+    zone: "Australia/Sydney" }
+];
+
+const worldContainer =
+  document.getElementById("worldClocks");
+
+cities.forEach((city, index) => {
+  const row = document.createElement("div");
+  row.className = "world-row";
+  row.innerHTML = `
+    <div>
+      <div class="city">${city.flag} ${city.name}</div>
+      <div class="zone">${city.zone}</div>
+    </div>
+    <div class="world-time" id="world${index}">--:--:--</div>
+  `;
+  worldContainer.appendChild(row);
+});
+
+function updateClocks() {
+  const now = new Date();
+
+  document.getElementById("localTime")
+    .textContent = now.toLocaleTimeString("en-GB");
+
+  document.getElementById("localDate")
+    .textContent = now.toLocaleDateString(
+      undefined,
+      { weekday: "long", year: "numeric",
+        month: "long", day: "numeric" }
+    );
+
+  cities.forEach((city, index) => {
+    document.getElementById("world" + index)
+      .textContent = new Intl.DateTimeFormat(
+        "en-GB",
+        {
+          timeZone: city.zone,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false
+        }
+      ).format(now);
+  });
+}
+
+updateClocks();
+setInterval(updateClocks, 250);
+
+// STOPWATCH
+let watchRunning = false;
+let watchStart = 0;
+let watchElapsed = 0;
+let watchInterval = null;
+
+function formatWatch(ms) {
+  const hundredths = Math.floor(ms / 10) % 100;
+  const seconds = Math.floor(ms / 1000) % 60;
+  const minutes = Math.floor(ms / 60000) % 60;
+  const hours = Math.floor(ms / 3600000);
+
+  return String(hours).padStart(2, "0") + ":" +
+    String(minutes).padStart(2, "0") + ":" +
+    String(seconds).padStart(2, "0") + "." +
+    String(hundredths).padStart(2, "0");
+}
+
+function renderWatch() {
+  const elapsed = watchElapsed +
+    (watchRunning ? Date.now() - watchStart : 0);
+
+  document.getElementById("stopwatch").textContent =
+    formatWatch(elapsed);
+}
+
+document.getElementById("startWatch")
+  .addEventListener("click", function () {
+    if (watchRunning) {
+      watchElapsed += Date.now() - watchStart;
+      watchRunning = false;
+      clearInterval(watchInterval);
+      this.textContent = "Resume";
+    } else {
+      watchStart = Date.now();
+      watchRunning = true;
+      watchInterval = setInterval(renderWatch, 30);
+      this.textContent = "Pause";
+    }
+    renderWatch();
+  });
+
+document.getElementById("resetWatch")
+  .addEventListener("click", function () {
+    watchRunning = false;
+    clearInterval(watchInterval);
+    watchElapsed = 0;
+    renderWatch();
+    document.getElementById("startWatch").textContent = "Start";
+  });
+
+// COUNTDOWN TIMER
+let remaining = 60;
+let deadline = 0;
+let timerRunning = false;
+let timerInterval = null;
+
+function readInputs() {
+  const m = Number(document.getElementById("minutes").value);
+  const s = Number(document.getElementById("seconds").value);
+
+  if (
+    !Number.isFinite(m) || !Number.isFinite(s) ||
+    m < 0 || s < 0 || s > 59 ||
+    !Number.isInteger(m) || !Number.isInteger(s) ||
+    m > 999
+  ) {
+    alert("Enter whole minutes and seconds from 0 to 59.");
+    return null;
+  }
+
+  if (m * 60 + s <= 0) {
+    alert("Please enter a time greater than zero.");
+    return null;
+  }
+
+  return m * 60 + s;
+}
+
+function renderTimer() {
+  const total = Math.max(0, Math.ceil(remaining));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+
+  document.getElementById("timerDisplay").textContent =
+    String(m).padStart(2, "0") + ":" +
+    String(s).padStart(2, "0");
+}
+
+function tickTimer() {
+  remaining = Math.max(0, (deadline - Date.now()) / 1000);
+  renderTimer();
+
+  if (remaining <= 0) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById("startTimer").textContent =
+      "Start Timer";
+    alert("⏰ Time is up!");
+  }
+}
+
+document.getElementById("startTimer")
+  .addEventListener("click", function () {
+    if (timerRunning) return;
+
+    if (remaining <= 0) {
+      const inputTime = readInputs();
+      if (inputTime === null) return;
+      remaining = inputTime;
+    }
+
+    deadline = Date.now() + remaining * 1000;
+    timerRunning = true;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(tickTimer, 100);
+    this.textContent = "Running...";
+    tickTimer();
+  });
+
+document.getElementById("pauseTimer")
+  .addEventListener("click", function () {
+    if (!timerRunning) return;
+
+    remaining = Math.max(0, (deadline - Date.now()) / 1000);
+    timerRunning = false;
+    clearInterval(timerInterval);
+    renderTimer();
+
+    document.getElementById("startTimer").textContent =
+      remaining > 0 ? "Resume Timer" : "Start Timer";
+  });
+
+document.getElementById("resetTimer")
+  .addEventListener("click", function () {
+    timerRunning = false;
+    clearInterval(timerInterval);
+
+    const inputTime = readInputs();
+    if (inputTime !== null) {
+      remaining = inputTime;
+    }
+
+    renderTimer();
+    document.getElementById("startTimer").textContent =
+      "Start Timer";
+  });
+
+renderWatch();
+renderTimer();
+</script>
+
+</body>
+</html>
